@@ -1,0 +1,16 @@
+# address-normalizer
+
+> Normalize postal addresses with explicit per-country rules: USPS Publication 28 abbreviations for the US, Royal Mail postcode format for GB and Canada Post codes for CA, with a change log Python package `trysac-address-normalizer`, import name `address_normalizer`, MIT licensed,
+> Python >= 3.10, no runtime dependencies.
+
+## Docs
+
+- [README](README.md): problem, install, usage example
+- [AGENTS](AGENTS.md): commands, folder map, conventions, limits
+- [Architecture](docs/ARCHITECTURE.md): shape of the package and its public API
+- [Testing](docs/TESTING.md): how to run and extend the tests
+
+## Optional
+
+- [Stack](docs/STACK.md): tools used and discarded
+- [Changelog](CHANGELOG.md): release history
