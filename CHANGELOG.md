@@ -9,4 +9,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added address normalizer for US, GB, and CA with explicit change logging.
 - Initial project structure from the factory utility template.

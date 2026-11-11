@@ -1,48 +1,55 @@
-# address-normalizer
+# trysac-address-normalizer
 
-[![PyPI version](https://img.shields.io/pypi/v/trysac-address-normalizer)](https://pypi.org/project/trysac-address-normalizer/)
-[![License: MIT](https://img.shields.io/pypi/l/trysac-address-normalizer)](LICENSE)
-[![CI](https://github.com/Trysac/u265-address-normalizer/actions/workflows/ci.yml/badge.svg)](https://github.com/Trysac/u265-address-normalizer/actions/workflows/ci.yml)
+Address data from forms and imports mixes 'Street', 'St.' and 'st', lowercase states and postcodes without their space, so deduplication, geocoding and shipping labels fail on records that are really the same. This library applies a small, documented rule set per country and reports every change it made.
 
-Normalize postal addresses with explicit per-country rules: USPS Publication 28 abbreviations for the US, Royal Mail postcode format for GB and Canada Post codes for CA, with a change log
+## Features
 
-## Problem
+- Frozen dataclasses `Address`, `Change`, `Result`; immutable `CountryRules` and bundled `RULES`.
+- Supported countries: `US`, `GB`, `CA`; the country code is uppercased.
+- Common steps: Unicode NFKC, collapse whitespace runs to one space and trim; `line1` and `country` are required.
+- US: uppercase `line1`, `line2`, `city`, `region`; remove punctuation except `#`, `-`, `/`; abbreviate directionals, suffixes and unit designators; validate region against the bundled state, possession and military codes (the 59 Appendix B codes plus AA, AE, AP); format ZIP as `NNNNN` or `NNNNN-NNNN`.
+- GB: uppercase city, keep region text, format postcode as `SW1A 1AA`; only `line1` and `country` are required.
+- CA: uppercase `line1`, `line2`, `city`, `region`; validate province against `AB BC MB NB NL NS NT NU ON PE QC SK YT`; format postal code as `K1A 0B1`.
+- `normalize` returns changes sorted by field and rule and deduplicated.
+- `normalize_postal_code(code, country)` applies only the country's postcode rule.
 
-Describe in two or three sentences the concrete problem this utility solves, who hits it, and what
-they do today without it. Replace this paragraph when the first real feature lands.
+## Installation
 
-## Install
-
-```sh
+```bash
 pip install trysac-address-normalizer
-# or
-uv add trysac-address-normalizer
 ```
-
-Requires Python 3.10 or newer. No runtime dependencies.
 
 ## Usage
 
 ```python
-import address_normalizer
+from address_normalizer import Address, normalize, normalize_postal_code
 
-# normalize() trims surrounding whitespace and lower-cases the text.
-print(address_normalizer.normalize("  Hello World "))  # -> "hello world"
-
-# Blank input is rejected explicitly instead of returning an empty string.
-try:
-    address_normalizer.normalize("   ")
-except ValueError as exc:
-    print(f"rejected: {exc}")
+result = normalize(
+    Address(
+        line1="123 north main street apartment 4",
+        city="springfield",
+        region="il",
+        postal_code="627011234",
+        country="US",
+    )
+)
+assert result.address.line1 == "123 N MAIN ST APT 4"
+assert result.address.postal_code == "62701-1234"
+assert normalize_postal_code("sw1a1aa", "GB") == "SW1A 1AA"
 ```
+
+## Public API
+
+- `normalize(address: Address, *, rules: Mapping[str, CountryRules] | None = None) -> Result` -- normalizes an `Address`; optional `rules` replaces the bundled `RULES`.
+- `normalize_postal_code(code: str, country: str) -> str` -- applies only the postcode rule for `US`, `GB` or `CA`.
+- `Address(line1, line2='', city='', region='', postal_code='', country='')`, `Change(field, rule)`, `Result(address, changes)`, `CountryRules`, `RULES`.
+- `AddressError.code` is one of `unsupported_country`, `invalid_region`, `invalid_postal_code`, `input_too_large`, `missing_field`.
+- Limits: every field is at most 200 characters after NFKC; `line1` and `country` must be non-empty. Supported countries are `US`, `GB`, `CA` when using bundled `RULES`.
+
+## Why not libpostal
+
+libpostal is a large parser trained on addresses and does not report field-level changes. This package is stdlib-only, applies deterministic per-country rules, and returns an explicit `Change` log for each field it altered.
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) and [decisions](docs/decisions/)
-- [Testing](docs/TESTING.md) and [security](docs/SECURITY.md)
-- [Project record](docs/PROJECT.md) and [stack](docs/STACK.md)
-- [Changelog](CHANGELOG.md) and [contributing guide](CONTRIBUTING.md)
-
-## License
-
-[MIT](LICENSE) (c) 2026 Miguel Gomez
+See [docs/SECURITY.md](docs/SECURITY.md) for the threat model, [docs/PROJECT.md](docs/PROJECT.md) for scope, and [docs/TESTING.md](docs/TESTING.md) for the test suite.
