@@ -2,21 +2,21 @@
 
 ## Threat model
 
-`trysac-address-normalizer` is a pure library without I/O. The main risks are:
+`trysac-address-normalizer` is a pure, standard-library-only library with no network, file, database or subprocess I/O in the package. It does not log addresses; the module installs `logging.NullHandler()`.
 
-- **Supply chain**: a compromised dependency or CI action. Mitigation: no runtime dependencies,
-  Dependabot weekly updates, actions pinned to major versions, minimal workflow permissions.
-- **Leaked secrets**: tokens committed by mistake. Mitigation: `gitleaks` runs in the local gates
-  and in CI; `.env` files are git-ignored.
-- **Insecure code**: shell injection, weak hashes, unsafe deserialization. Mitigation: Ruff's
-  `S` rules in lint and a `security` gate (Bandit, high severity fails, `# nosec` ignored); fix the
-  code instead of silencing it.
-- **Untrusted input**: callers may pass hostile strings. Mitigation: validate input and fail with
-  explicit exceptions; never `eval`, `exec` or deserialize untrusted data.
+Defended:
+- Untrusted field strings: every field is NFKC-normalized and checked against `MAX_FIELD_LENGTH = 200`; oversize input raises `AddressError('input_too_large')`.
+- Missing required fields: empty `line1` or `country` after whitespace collapse raises `AddressError('missing_field')`.
+- Unsupported countries and invalid region/postcode formats raise `AddressError` with the specific code; the library never silently accepts a country it has no rules for.
+- No `eval`, `exec`, deserialization of untrusted data, or runtime dependency supply chain.
+
+Not defended:
+- The caller's handling of normalized addresses after return, including storage, display and logging; addresses are personal data.
+- Address validation against official postal databases; the rules only check bundled region codes and postcode patterns.
+- Free-text parsing or geocoding; there is no such feature.
+- Denial of service through request volume; only per-field size is limited.
+- Other countries or region-name-to-code conversion; those are out of scope.
 
 ## Publishing
 
-Releases are published to PyPI with trusted publishing (OIDC) when available, never with a
-long-lived token stored in the repository.
-
-To report a vulnerability, see [SECURITY.md](../SECURITY.md).
+The package has no runtime dependencies. Release credentials and repository publishing controls are managed outside this library; do not embed secrets in source or tests. To report a vulnerability, use the repository's issue tracker.

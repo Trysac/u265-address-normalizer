@@ -3,27 +3,20 @@
 ## Running
 
 ```sh
-uv run pytest --cov=address_normalizer   # tests with coverage report
-uv run python scripts/check.py      # every gate, as CI and the factory run it
+python -m pytest tests/test_address_normalizer.py
 ```
 
 ## Policy
 
-- Branch coverage of `src/address_normalizer` must stay at or above 80 %; the gate fails below it.
-- Tests exercise the public API (`import address_normalizer`) and assert every observable effect:
-  return values, raised exceptions and their messages.
-- Each bug fix starts with a failing test that reproduces it.
-- Tests are deterministic: no network, no wall clock, no dependence on test order.
+- Tests call the public API `address_normalizer`.
+- They assert normalized addresses, change tuples, and `AddressError.code` values.
+- They cover the acceptance cases in the specification: US full example, line1 suffix/punctuation and line2 unit, invalid region/postal/country, 200/201 character limit, missing required fields, and GB/CA postal code formatting and invalid codes.
+- No property-based or external conformance tests are present.
 
 ## Tiers
 
-- Local tier (every gate run, coverage measured here): unit and property tests, plus conformance on small
-  fixtures kept in the repository.
-- CI tier: conformance that needs an external tool or a download. Mark them `@pytest.mark.conformance`; `scripts/check.py` deselects them locally
-  (unless `FABRICA_CI=1`). The CI `conformance` job sets `FABRICA_CI=1` and runs the full suite. Tools are installed
-  by the optional `ci/conformance-setup.sh` (bash, CI only; verify every download against a pinned SHA-256), and
-  tagged tests skip cleanly when their tool is missing.
+The tests are a single pytest tier. No conformance tests, external tools, downloads, markers or CI-only setup are present in the repository code.
 
 ## Layout
 
-`tests/test_<module>.py` mirrors each public module. Shared fixtures go in `tests/conftest.py`.
+`tests/test_address_normalizer.py` contains all tests. There is no `tests/conftest.py` in the repository code.
